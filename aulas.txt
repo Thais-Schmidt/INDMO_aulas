@@ -1,0 +1,241 @@
+Aula 1 -
+
+instalar o aplicativo expo go no celular
+
+terminal no vs code 
+    npm install --global expo
+    npx create-expo-app <appAulas> --> este é o nome do aplicativo
+    npx expo start  //ele da um codigo de barras no terminal para escanear pelo aplicativo expo go no celular
+    npx expo start --tunnel //permite que conectar o aplicativo e o aparelho movel em redes diferentes
+
+depois saimos do terminal e apertamos W 
+
+vao aparecer 4 linhas - 3 amarelas e 1 branca - na linha branca esta a linha para fazer a instalação de
+pacotes para que o app possa ser executado em um navegador web
+
+    npm i react-native-web@~0.19.6, react-dom@18.2.0, @expo/metro-runtime@~3.1.1 // essa linha vai aparecer (sem o npm i)
+    npx expo start //depois de rodar essa linha, vao aparecer duas opçoes no terminal - o link do localhost(para web) e o qr code para o app
+
+
+npm install react-native-modal // instalando a extensão do modal
+import Modal from 'react-native-modal'; // para poder criar modais dentro o projeto
+
+--------------------------------------  aula 4
+Navegar entre paginas
+
+npx expo install @react-navigation/native    
+npx expo install react-native-screens react-native-safe-area-context 
+npx expo install @react-navigation/native-stack 
+
+*Olhar aula4 para ver melhor como funciona a navegação entre paginas
+
+-------------------------------------- aula ????
+
+npm install @react-navigation/bottom-tabs       botoes de navegação na parte inferior da tela
+
+----------------------------------------aula ja nao sei mais
+
+no cmd  - ipconfig
+
+Endereço IPv4. . . . . . . .  . . . . . . . : 10.0.0.191
+
+thais.silva69@senaisp.edu.br
+
+
+
+
+import { Alert, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
+import { DatabaseConnection } from '../../database/database'
+import { useNavigation } from '@react-navigation/native';
+import { useState, useEffect } from 'react';
+
+const db = new DatabaseConnection.getConnection;
+
+export default function App() {
+
+    const navigation = useNavigation();
+
+    const [nome, setNome] = useState(null);
+    const [dataNasc, setDataNasc] = useState();
+    const [tipo, setTipo] = useState(null);
+    const [numero, setNumero] = useState(null);
+    const [clientesID, setClientesID] = useState(null);
+    const [telefonesID, setTelefonesID] = useState(null);
+    const [contatosClientes, setContatosClientes] = useState([]);
+    const [contatosTelefones, setContatosTelefones] = useState([]);
+    const [contatosTelCli, setContatosTelCli] = useState([])
+
+    const addInfos1 = () => {
+
+        if (
+            tipo === null || tipo.trim() === '' ||
+            numero === null || numero.trim() === '' ||
+            nome === null || nome.trim() === '' ||
+            dataNasc === null || dataNasc.trim() === '') {
+
+            Alert.alert('Amigo', 'Tu não preencheu todos os dados, volta la e preenche.');
+            return;
+        }
+
+        db.transaction(tx => {
+            tx.executeSql('INSERT INTO tbl_clientes(nome, data_nasc) VALUES (?,?);',
+                [nome, dataNasc], (_, result) => {
+
+                    const clientesID = result.insertId;
+
+                    db.transaction(tx => {
+
+                        tx.executeSql(
+
+                            'INSERT INTO tbl_telefones(numero, tipo) VALUES (?,?);',
+                            [numero, tipo],
+                            (_, result) => {
+                                const telefonesID = result.insertId;
+
+
+                                db.transaction(tx => {
+
+                                    tx.executeSql(
+                                        'INSERT INTO tbl_telefone_has_clientes(numero, tipo) VALUES (?,?);',
+                                        [clientesID, telefonesID],
+                                        () => {
+                                            Alert.alert('Contato adicionado com sucesso!');
+                                            setNome('');
+                                            setDataNasc('');
+                                            setNumero('');
+                                            setTipo('');
+                                            atualizarAgenda();
+                                            navegarLista();
+
+                                        },
+                                        (_, error) => {
+                                            console.error('Erro ao inserir dados na tbl_telefone_has_clientes:', error);
+                                            Alert.alert('Ocorreu um erro ao adicionar o contato. Por favor, tente novamente.');
+                                        }
+
+                                    );
+                                });
+                            },
+
+                            (_, error) => {
+                                console.error('Erro ao inserir dados na tbl_telefones:', error);
+                                Alert.alert('Ocorreu um erro ao adicionar o contato. Por favor, tente novamente.');
+                            }
+                        );
+                    });
+                },
+                (_, error) => {
+                    console.error('Erro ao inserir dados na tbl_clientes:', error);
+                    Alert.alert('Ocorreu um erro ao adicionar o contato. Por favor, tente novamente.');
+                }
+            );
+        });
+    };
+
+    const atualizarAgenda = () => {
+        db.transaction(tx => {
+            tx.executeSql(
+                `SELECT c.nome, c.dataNasc, t.numero, t.tipo
+                FROM tbl_clientes c
+                JOIN tbl_telefone_has_clientes tc ON c.id = tc.id_cliente
+                JOIN tbl_telefones t ON t.id = tc.id_telefone;`,
+                [],
+                (_, { rows }) => {
+                    setContatosClientes(rows._array);
+                }
+            );
+        });
+    };
+
+    useEffect(() => {
+        atualizarAgenda();
+    }, [])
+
+    return (
+
+        <View style={styles.container}>
+
+            <Text style={styles.title}>Cadastrar contatos</Text>
+
+            <Text style={styles.label}>Nome:</Text>
+            <TextInput
+                style={styles.input}
+                placeholder='Insira o nome do contato'
+                onChangeText={setNome}
+            />
+
+            <Text style={styles.label}>Data de nascimento:</Text>
+            <TextInput
+                style={styles.input}
+                placeholder='Insira a data de nascimento'
+                onChangeText={setDataNasc}
+            />
+
+            <Text style={styles.label}>Numero:</Text>
+            <TextInput
+                style={styles.input}
+                placeholder='Insira o numero'
+                onChangeText={setNumero}
+            />
+
+            <Text style={styles.label}>Tipo:</Text>
+            <TextInput
+                style={styles.input}
+                placeholder='Insira o tipo'
+                onChangeText={setTipo}
+            />
+
+            <Pressable
+                onPress={addInfos1}
+                style={
+                    {
+                        backgroundColor: 'blue',
+                        width: 200,
+                        height: 40,
+                        justifyContent: 'center',
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        marginTop: 10,
+                        fontSize: 18
+                    }
+                }
+            >
+
+                <Text style={{ color: 'white' }}>
+                    Adicionar contato
+                </Text>
+
+            </Pressable>
+
+
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10
+    },
+    input: {
+        height: 40,
+        margin: 12,
+        borderWidth: 1,
+        padding: 10,
+        width: 250,
+        borderRadius: 5
+    },
+    label: {
+        fontWeight: 'bold',
+        textAlign: 'center'
+    }
+});
+
+
+
+
+
+
