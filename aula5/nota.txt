@@ -1,0 +1,5 @@
+npm i expo-camera
+npm i expo-media-library
+
+    da pra ver nas dependencias no package.json
+
