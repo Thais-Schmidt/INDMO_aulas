@@ -64,12 +64,16 @@ export const styles = StyleSheet.create({
         margin: 64,
     },
     buttonFlash: {
-        // backgroundColor: flashMode === 'off' ? '#000' : '#fff',
+        backgroundColor: flashMode === 'off' ? '#000' : '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
         borderRadius: 50,
         height: 25,
         width: 25
     },
     buttonAlternarCamera: {
+        justifyContent: 'center',
+        alignItems: 'center',
         marginTop: 20,
         borderRadius: 50,
         height: 25,

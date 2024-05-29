@@ -12,9 +12,11 @@ export default function App() {
   const [flashMode, setFlashMode] = useState('off'); //liga/desliga o flash
   const [facing, setFacing] = useState('back'); //troca para a camera traseira
   const [permission, requestPermission] = useCameraPermissions();
+  const [permissionResponseMD, requestPermissionMD] = Medialibrary.usePermissions();
 
   useEffect(() => {
     requestPermission();
+    requestPermissionMD();
   }, []);
 
   //função para iniciar a camera
@@ -28,27 +30,42 @@ export default function App() {
 
   //função para tirar a foto
   const takePicture = async () => {
-
+    try {
+      const photo = await cameraRef.current.takePictureAsync();
+      console.log(photo)
+      //setPreviewVisible(true)
+      setCapturedImage(photo.uri);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   //chama a função savePhoto
   useEffect(() => {
-
+    //console.log('Aqui', capturedImage);
+    if(capturedImage) {
+      savePhoto()
+    }
   }, [capturedImage]);
 
   //função para salvar a foto assim que a imagem for atribuida ao 'useState' 'setCaptureImage'
   const savePhoto = async () => {
-
+    const asset = await Medialibrary.createAssetAsync(capturedImage)
+      .then(() => {
+        Alert.alert('Foto salva com sucesso!')
+      }). catch(error => {
+        console.log(error);
+      });
   };
 
   //liga e desliga o flash do celular
   const handleFlashMode = async () => {
-
+    setFlashMode(current => (current === 'off'? 'on' : 'off'));
   };
 
   //alternar entre camera frontal e traseira
   const toggleCameraFacing = async () => {
-
+    setFacing(current => (current === 'back' ? 'front' : 'back'));   // vai verificar atraves do estado qual camera esta setada no momento atual, se for back muda para front e vice-versa
   };
 
   // //as permissoes da camera ainda estão carregando
@@ -76,10 +93,7 @@ export default function App() {
 
                 <TouchableOpacity style={styles.buttonFlash} onPress={handleFlashMode}>
 
-                  {flashMode === 'off' ?
-                    <FontAwesome6 name='bolt' size={24} color='#fff' /> :
-                    <FontAwesome6 name='bolt' size={24} color='#DBC800' />
-                  }
+                  {flashMode === 'off' ? <FontAwesome6 name='bolt' size={24} color='#fff' />  : <FontAwesome6 name='bolt' size={24} color='#DBC800' />  }
 
                 </TouchableOpacity>
 
